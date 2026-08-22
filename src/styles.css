@@ -1,0 +1,668 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * TOKYO RENTALS & CONCIERGE — Design System
+ * Midnight black · deep charcoal · elegant gold · white typography
+ * Dark-only luxury automotive theme.
+ */
+
+@theme {
+  --font-display: "Cormorant Garamond", "Georgia", serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-night: var(--night);
+  --color-charcoal: var(--charcoal);
+  --color-whatsapp: var(--whatsapp);
+}
+
+:root {
+  --radius: 0.25rem;
+  /* Midnight black base */
+  --background: oklch(0.145 0.01 268);
+  --foreground: oklch(0.955 0.008 95);
+  /* Deep charcoal surfaces */
+  --card: oklch(0.18 0.012 268);
+  --card-foreground: oklch(0.955 0.008 95);
+  --popover: oklch(0.165 0.012 268);
+  --popover-foreground: oklch(0.955 0.008 95);
+  /* Elegant gold */
+  --primary: oklch(0.77 0.12 87);
+  --primary-foreground: oklch(0.19 0.03 90);
+  --secondary: oklch(0.22 0.012 268);
+  --secondary-foreground: oklch(0.955 0.008 95);
+  --muted: oklch(0.22 0.012 268);
+  --muted-foreground: oklch(0.68 0.015 260);
+  --accent: oklch(0.77 0.12 87);
+  --accent-foreground: oklch(0.19 0.03 90);
+  --destructive: oklch(0.62 0.2 25);
+  --destructive-foreground: oklch(0.97 0.005 95);
+  --border: oklch(0.3 0.012 268);
+  --input: oklch(0.32 0.012 268);
+  --ring: oklch(0.77 0.12 87);
+  /* Brand tokens */
+  --gold: oklch(0.77 0.12 87);
+  --gold-soft: oklch(0.87 0.09 92);
+  --night: oklch(0.105 0.01 268);
+  --charcoal: oklch(0.18 0.012 268);
+  --whatsapp: oklch(0.72 0.17 152);
+}
+
+/* Dark-only site: keep .dark identical so utilities never drift */
+.dark {
+  --background: oklch(0.145 0.01 268);
+  --foreground: oklch(0.955 0.008 95);
+  --card: oklch(0.18 0.012 268);
+  --card-foreground: oklch(0.955 0.008 95);
+  --popover: oklch(0.165 0.012 268);
+  --popover-foreground: oklch(0.955 0.008 95);
+  --primary: oklch(0.77 0.12 87);
+  --primary-foreground: oklch(0.19 0.03 90);
+  --secondary: oklch(0.22 0.012 268);
+  --secondary-foreground: oklch(0.955 0.008 95);
+  --muted: oklch(0.22 0.012 268);
+  --muted-foreground: oklch(0.68 0.015 260);
+  --accent: oklch(0.77 0.12 87);
+  --accent-foreground: oklch(0.19 0.03 90);
+  --destructive: oklch(0.62 0.2 25);
+  --destructive-foreground: oklch(0.97 0.005 95);
+  --border: oklch(0.3 0.012 268);
+  --input: oklch(0.32 0.012 268);
+  --ring: oklch(0.77 0.12 87);
+  --gold: oklch(0.77 0.12 87);
+  --gold-soft: oklch(0.87 0.09 92);
+  --night: oklch(0.105 0.01 268);
+  --charcoal: oklch(0.18 0.012 268);
+  --whatsapp: oklch(0.72 0.17 152);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--gold) 35%, transparent);
+    color: var(--foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Reusable brand components                                           */
+/* ------------------------------------------------------------------ */
+
+@utility btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  background: var(--gold);
+  color: var(--primary-foreground);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-sm);
+  padding: 0.95rem 1.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    transform 0.35s ease,
+    box-shadow 0.35s ease;
+  &:hover {
+    background: var(--gold-soft);
+    border-color: var(--gold-soft);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 34px -12px color-mix(in oklab, var(--gold) 55%, transparent);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@utility btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid color-mix(in oklab, var(--gold) 45%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 0.95rem 1.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition:
+    color 0.35s ease,
+    border-color 0.35s ease,
+    transform 0.35s ease,
+    box-shadow 0.35s ease;
+  &:hover {
+    color: var(--gold-soft);
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -14px color-mix(in oklab, var(--gold) 35%, transparent);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@utility btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  background: transparent;
+  color: var(--whatsapp);
+  border: 1px solid color-mix(in oklab, var(--whatsapp) 55%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 0.95rem 1.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+  &:hover {
+    background: var(--whatsapp);
+    color: var(--night);
+    transform: translateY(-1px);
+  }
+}
+
+@utility label-caps {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+@utility input-dark {
+  width: 100%;
+  background: var(--night);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  transition: border-color 0.25s ease;
+  &::placeholder {
+    color: var(--muted-foreground);
+  }
+  &:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+}
+
+@utility lux-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.35s ease, transform 0.35s ease;
+  &:hover {
+    border-color: color-mix(in oklab, var(--gold) 45%, transparent);
+  }
+}
+
+@utility heading-rule {
+  display: block;
+  width: 3.5rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+
+@utility text-gold-gradient {
+  background: linear-gradient(
+    105deg,
+    var(--gold-soft) 0%,
+    var(--gold) 45%,
+    var(--gold-soft) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ------------------------------------------------------------------ */
+/* Cinematic hero — "vehicle arrival" timeline (GPU transforms only)   */
+/* 0–1s dark reveal · 1–2.5s artwork emerges · 2–4.5s camera push-in   */
+/* ------------------------------------------------------------------ */
+
+@keyframes hero-arrive {
+  0% {
+    opacity: 0;
+    transform: scale(1.16) translate3d(-2.2%, 0.5%, 0);
+  }
+  22% {
+    opacity: 0;
+  }
+  58% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes hero-drift {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.075) translate3d(0.6%, -0.4%, 0);
+  }
+}
+
+@keyframes hero-sweep {
+  0% {
+    transform: translateX(-130%) skewX(-18deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.5;
+  }
+  80% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateX(140%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes hero-streak {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(240%);
+    opacity: 0;
+  }
+}
+
+@keyframes particle-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: var(--po, 0.3);
+  }
+  50% {
+    transform: translate3d(var(--px, 10px), var(--py, -26px), 0);
+    opacity: var(--po-hi, 0.55);
+  }
+}
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-media {
+  animation:
+    hero-arrive 4.6s cubic-bezier(0.22, 1, 0.36, 1) both,
+    hero-drift 32s ease-in-out 4.8s infinite alternate;
+  will-change: transform, opacity;
+}
+
+.hero-sweep {
+  animation: hero-sweep 2.6s ease-in-out var(--d, 3s) both;
+  will-change: transform, opacity;
+}
+
+.hero-streak {
+  animation: hero-streak 3.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  will-change: transform, opacity;
+}
+
+.hero-particle {
+  opacity: 0;
+  animation:
+    hero-particle-in 1.6s ease-out var(--pin, 2.6s) both,
+    particle-float var(--pd, 9s) ease-in-out var(--pdel, 0s) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes hero-particle-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--po, 0.3);
+  }
+}
+
+.hero-fade {
+  opacity: 0;
+  animation: hero-fade-up 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+
+/* Headline word entrance — slight clip reveal for an editorial feel */
+@keyframes hero-word {
+  from {
+    opacity: 0;
+    transform: translateY(110%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-word {
+  display: inline-block;
+  opacity: 0;
+  animation: hero-word 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+  will-change: transform, opacity;
+}
+
+/* Scroll indicator */
+@keyframes scroll-line {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  45% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+.scroll-indicator-line {
+  animation: scroll-line 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/* Scroll reveals (driven by IntersectionObserver via Reveal)          */
+/* ------------------------------------------------------------------ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--rd, 0s);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-scale {
+  transform: translateY(24px) scale(0.985);
+}
+
+/* ------------------------------------------------------------------ */
+/* Page transitions — fast fade + slight rise on navigation            */
+/* ------------------------------------------------------------------ */
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Interior page hero entrance */
+@keyframes page-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-hero-in {
+  animation: page-hero-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ------------------------------------------------------------------ */
+/* Component micro-animations                                          */
+/* ------------------------------------------------------------------ */
+
+/* Gallery image crossfade on switch */
+@keyframes img-switch {
+  from {
+    opacity: 0.25;
+    transform: scale(1.012);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.img-switch {
+  animation: img-switch 0.55s ease-out both;
+}
+
+/* Result-count pop when filters change */
+@keyframes count-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.count-pop {
+  display: inline-block;
+  animation: count-pop 0.35s ease-out both;
+}
+
+/* Mobile menu entrance */
+@keyframes menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-enter {
+  animation: menu-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-item-in {
+  opacity: 0;
+  animation: menu-item-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+
+/* Luxury card shine sweep on hover */
+.card-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    color-mix(in oklab, var(--gold-soft) 14%, transparent) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.card-shine:hover::after {
+  transform: translateX(120%);
+}
+
+/* CTA arrow glide */
+.cta-arrow {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .cta-arrow,
+a:hover > .cta-arrow,
+button:hover > .cta-arrow {
+  transform: translateX(4px);
+}
+
+/* Image frame with offset gold corner detail */
+.img-frame {
+  position: relative;
+}
+
+.img-frame::before {
+  content: "";
+  position: absolute;
+  top: -0.6rem;
+  left: -0.6rem;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-top: 1px solid color-mix(in oklab, var(--gold) 65%, transparent);
+  border-left: 1px solid color-mix(in oklab, var(--gold) 65%, transparent);
+  pointer-events: none;
+}
+
+/* Thin gold progress hairline at the top of the scrolled navbar */
+.nav-gold-line {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--gold) 70%, transparent),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .hero-media,
+  .hero-sweep,
+  .hero-streak,
+  .hero-particle,
+  .hero-fade,
+  .hero-word,
+  .scroll-indicator-line,
+  .page-enter,
+  .page-hero-in,
+  .img-switch,
+  .count-pop,
+  .menu-enter,
+  .menu-item-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .card-shine::after {
+    display: none;
+  }
+}
