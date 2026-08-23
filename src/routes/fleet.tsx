@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { MessageCircle, Search } from "lucide-react";
+import { ChevronDown, MessageCircle, Search } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { VehicleCard } from "@/components/fleet/VehicleCard";
 import {
@@ -47,14 +47,24 @@ const chipCls = (active: boolean) =>
       : "border-border bg-transparent text-foreground/70 hover:border-gold/60 hover:text-gold",
   );
 
+type SortKey = "featured" | "price-asc" | "price-desc" | "name-asc";
+
+const SORT_OPTIONS: ReadonlyArray<{ value: SortKey; label: string }> = [
+  { value: "featured", label: "Featured First" },
+  { value: "price-asc", label: "Price · Low to High" },
+  { value: "price-desc", label: "Price · High to Low" },
+  { value: "name-asc", label: "Name · A to Z" },
+];
+
 function FleetPage() {
   const { category } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [sort, setSort] = useState<SortKey>("featured");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return VEHICLES.filter((v) => {
+    const matches = VEHICLES.filter((v) => {
       if (category && categorySlug(v.category) !== category) return false;
       if (availableOnly && v.availability !== "available") return false;
       if (
@@ -66,7 +76,24 @@ function FleetPage() {
         return false;
       return true;
     });
-  }, [category, query, availableOnly]);
+    // Sorting is presentation-only; the filtered slice mirrors the data layer.
+    const sorted = [...matches];
+    switch (sort) {
+      case "price-asc":
+        sorted.sort((a, b) => a.pricePerDay - b.pricePerDay);
+        break;
+      case "price-desc":
+        sorted.sort((a, b) => b.pricePerDay - a.pricePerDay);
+        break;
+      case "name-asc":
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      default:
+        // Featured vehicles lead; Array#sort is stable, so data order holds.
+        sorted.sort((a, b) => Number(b.featured) - Number(a.featured));
+    }
+    return sorted;
+  }, [category, query, availableOnly, sort]);
 
   const activeCategory = VEHICLE_CATEGORIES.find(
     (c) => categorySlug(c) === category,
@@ -83,8 +110,8 @@ function FleetPage() {
       <section className="mx-auto max-w-7xl px-5 py-14 lg:px-8" aria-label="Fleet catalog">
         {/* Controls */}
         <div className="flex flex-col gap-6 border-b border-border pb-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="relative w-full md:max-w-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full lg:max-w-xs">
               <Search
                 className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden
@@ -98,23 +125,51 @@ function FleetPage() {
                 className="input-dark !pl-10"
               />
             </div>
-            <div className="flex items-center gap-2" role="group" aria-label="Availability filter">
-              <button
-                type="button"
-                onClick={() => setAvailableOnly(false)}
-                className={chipCls(!availableOnly)}
-                aria-pressed={!availableOnly}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                onClick={() => setAvailableOnly(true)}
-                className={chipCls(availableOnly)}
-                aria-pressed={availableOnly}
-              >
-                Available Now
-              </button>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 lg:justify-end">
+              <div className="flex items-center gap-2" role="group" aria-label="Availability filter">
+                <button
+                  type="button"
+                  onClick={() => setAvailableOnly(false)}
+                  className={chipCls(!availableOnly)}
+                  aria-pressed={!availableOnly}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAvailableOnly(true)}
+                  className={chipCls(availableOnly)}
+                  aria-pressed={availableOnly}
+                >
+                  Available Now
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <label
+                  htmlFor="fleet-sort"
+                  className="whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground"
+                >
+                  Sort
+                </label>
+                <div className="relative w-full sm:w-60">
+                  <select
+                    id="fleet-sort"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as SortKey)}
+                    className="input-dark cursor-pointer appearance-none"
+                  >
+                    {SORT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+                    aria-hidden
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

@@ -3,6 +3,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { CalendarCheck, MessageCircle, ShieldCheck } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
+import { siteConfig } from "@/data/site";
 import { VEHICLES, formatPrice, getVehicleBySlug } from "@/data/vehicles";
 import { bookingUrl } from "@/lib/whatsapp";
 
@@ -39,6 +40,16 @@ const bookingSchema = z
     vehicleSlug: z.string().min(1, "Please choose a vehicle"),
     pickupDate: z.string().min(1, "Pickup date is required"),
     returnDate: z.string().min(1, "Return date is required"),
+    pickupLocation: z
+      .string()
+      .trim()
+      .min(3, "Please enter a pickup location")
+      .max(120, "Location is too long"),
+    returnLocation: z
+      .string()
+      .trim()
+      .min(3, "Please enter a return location")
+      .max(120, "Location is too long"),
     name: z.string().trim().min(2, "Please enter your full name").max(100, "Name is too long"),
     phone: z
       .string()
@@ -69,19 +80,38 @@ const fmtDate = (iso: string) =>
     year: "numeric",
   });
 
+/** Thousands-separated USD amount used across the summary and confirmation. */
+const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+
+/**
+ * Unique client-side booking reference (no backend yet). Shown on the
+ * confirmation panel and embedded in the WhatsApp request so the team can
+ * quote it back during confirmation.
+ */
+const makeBookingRef = () =>
+  `TRC-${Date.now().toString(36).slice(-4)}${Math.random()
+    .toString(36)
+    .slice(2, 6)}`.toUpperCase();
+
 function BookPage() {
   const search = Route.useSearch();
   const [form, setForm] = useState<BookingForm>({
     vehicleSlug: search.vehicle && getVehicleBySlug(search.vehicle) ? search.vehicle : "",
     pickupDate: "",
     returnDate: "",
+    pickupLocation: "",
+    returnLocation: "",
     name: "",
     phone: "",
     email: "",
     message: "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof BookingForm, string>>>({});
-  const [sentUrl, setSentUrl] = useState<string | null>(null);
+  /** Set after a validated submit — drives the confirmation panel. */
+  const [confirmation, setConfirmation] = useState<{
+    reference: string;
+    url: string;
+  } | null>(null);
 
   const vehicle = form.vehicleSlug ? getVehicleBySlug(form.vehicleSlug) : undefined;
 
@@ -99,7 +129,7 @@ function BookPage() {
     ) => {
       setForm((f) => ({ ...f, [key]: e.target.value }));
       setErrors((er) => ({ ...er, [key]: undefined }));
-      setSentUrl(null);
+      setConfirmation(null);
     };
 
   const onSubmit = (e: FormEvent) => {
@@ -115,20 +145,44 @@ function BookPage() {
       return;
     }
     const v = getVehicleBySlug(parsed.data.vehicleSlug)!;
-    const total = days > 0 ? `$${days * v.pricePerDay}` : undefined;
+    const reference = makeBookingRef();
+    // Structured booking payload — the single shape a future Supabase insert
+    // will consume. Nothing is stored server-side today; it currently drives
+    // the WhatsApp handoff and the on-page confirmation only.
+    const booking = {
+      reference,
+      vehicle_slug: parsed.data.vehicleSlug,
+      pickup_date: parsed.data.pickupDate,
+      return_date: parsed.data.returnDate,
+      rental_days: days > 0 ? days : null,
+      pickup_location: parsed.data.pickupLocation,
+      return_location: parsed.data.returnLocation,
+      customer_name: parsed.data.name,
+      customer_phone: parsed.data.phone,
+      customer_email: parsed.data.email,
+      notes: parsed.data.message.trim() || null,
+      currency: v.currency,
+      daily_rate: v.pricePerDay,
+      estimated_total: days > 0 ? days * v.pricePerDay : null,
+      created_at: new Date().toISOString(),
+    };
     const url = bookingUrl({
+      reference: booking.reference,
       vehicleName: v.name,
-      pickupDate: fmtDate(parsed.data.pickupDate),
-      returnDate: fmtDate(parsed.data.returnDate),
-      customerName: parsed.data.name,
-      phone: parsed.data.phone,
-      email: parsed.data.email,
-      message: parsed.data.message,
-      rentalDays: days > 0 ? days : undefined,
-      estimatedTotal: total,
+      pickupDate: fmtDate(booking.pickup_date),
+      returnDate: fmtDate(booking.return_date),
+      pickupLocation: booking.pickup_location,
+      returnLocation: booking.return_location,
+      rentalDays: booking.rental_days ?? undefined,
+      estimatedTotal:
+        booking.estimated_total !== null ? money(booking.estimated_total) : undefined,
+      customerName: booking.customer_name,
+      phone: booking.customer_phone,
+      email: booking.customer_email,
+      message: booking.notes ?? undefined,
     });
     window.open(url, "_blank", "noopener,noreferrer");
-    setSentUrl(url);
+    setConfirmation({ reference, url });
   };
 
   return (
@@ -143,102 +197,225 @@ function BookPage() {
         <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr]">
           {/* Form */}
           <form onSubmit={onSubmit} noValidate className="border border-border bg-card p-6 md:p-8">
-            <h2 className="label-caps">Booking Details</h2>
-
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <Field label="Vehicle" error={errors.vehicleSlug} full>
-                <select
-                  value={form.vehicleSlug}
-                  onChange={set("vehicleSlug")}
-                  className="input-dark"
-                  aria-label="Select vehicle"
+            {/* 01 — Vehicle & dates */}
+            <section aria-labelledby="step-vehicle">
+              <h2 id="step-vehicle" className="flex items-baseline gap-3">
+                <span
+                  aria-hidden
+                  className="font-display text-lg font-medium leading-none text-gold"
                 >
-                  <option value="">Select a vehicle…</option>
-                  {VEHICLES.map((v) => (
-                    <option key={v.id} value={v.slug}>
-                      {v.name} — {v.category} · {formatPrice(v)}/day
-                      {v.availability === "unavailable" ? " (currently booked)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+                  01
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground/90">
+                  Vehicle &amp; Dates
+                </span>
+              </h2>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <Field label="Vehicle" error={errors.vehicleSlug} full>
+                  <select
+                    value={form.vehicleSlug}
+                    onChange={set("vehicleSlug")}
+                    className="input-dark"
+                    aria-label="Select vehicle"
+                  >
+                    <option value="">Select a vehicle…</option>
+                    {VEHICLES.map((v) => (
+                      <option key={v.id} value={v.slug}>
+                        {v.name} — {v.category} · {formatPrice(v)}/day
+                        {v.availability === "unavailable" ? " (currently booked)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
 
-              <Field label="Pickup Date" error={errors.pickupDate}>
-                <input
-                  type="date"
-                  value={form.pickupDate}
-                  min={todayIso()}
-                  onChange={set("pickupDate")}
-                  className="input-dark"
-                />
-              </Field>
+                <Field label="Pickup Date" error={errors.pickupDate}>
+                  <input
+                    type="date"
+                    value={form.pickupDate}
+                    min={todayIso()}
+                    onChange={set("pickupDate")}
+                    className="input-dark"
+                  />
+                </Field>
 
-              <Field label="Return Date" error={errors.returnDate}>
-                <input
-                  type="date"
-                  value={form.returnDate}
-                  min={form.pickupDate || todayIso()}
-                  onChange={set("returnDate")}
-                  className="input-dark"
-                />
-              </Field>
+                <Field label="Return Date" error={errors.returnDate}>
+                  <input
+                    type="date"
+                    value={form.returnDate}
+                    min={form.pickupDate || todayIso()}
+                    onChange={set("returnDate")}
+                    className="input-dark"
+                  />
+                </Field>
+              </div>
+            </section>
 
-              <Field label="Full Name" error={errors.name}>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={set("name")}
-                  placeholder="Your name"
-                  autoComplete="name"
-                  className="input-dark"
-                />
-              </Field>
+            {/* 02 — Pickup & return locations */}
+            <section
+              aria-labelledby="step-locations"
+              className="border-t border-border pt-8"
+            >
+              <h2 id="step-locations" className="flex items-baseline gap-3">
+                <span
+                  aria-hidden
+                  className="font-display text-lg font-medium leading-none text-gold"
+                >
+                  02
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground/90">
+                  Pickup &amp; Return
+                </span>
+              </h2>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                Hotel, residence, airport or our {siteConfig.location} office —
+                wherever suits your journey.
+              </p>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <Field label="Pickup Location" error={errors.pickupLocation}>
+                  <input
+                    type="text"
+                    value={form.pickupLocation}
+                    onChange={set("pickupLocation")}
+                    placeholder="e.g. Banjul International Airport"
+                    autoComplete="off"
+                    className="input-dark"
+                  />
+                </Field>
 
-              <Field label="Phone Number" error={errors.phone}>
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={set("phone")}
-                  placeholder="+220 …"
-                  autoComplete="tel"
-                  className="input-dark"
-                />
-              </Field>
+                <Field label="Return Location" error={errors.returnLocation}>
+                  <input
+                    type="text"
+                    value={form.returnLocation}
+                    onChange={set("returnLocation")}
+                    placeholder="e.g. Senegambia, Kololi"
+                    autoComplete="off"
+                    className="input-dark"
+                  />
+                </Field>
 
-              <Field label="Email Address" error={errors.email} full>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={set("email")}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  className="input-dark"
-                />
-              </Field>
+              </div>
+            </section>
 
-              <Field label="Additional Request (optional)" error={errors.message} full>
-                <textarea
-                  value={form.message}
-                  onChange={set("message")}
-                  rows={4}
-                  placeholder="Airport pickup, child seat, chauffeur, delivery location…"
-                  className="input-dark resize-none"
-                />
-              </Field>
-            </div>
+            {/* 03 — Customer details */}
+            <section
+              aria-labelledby="step-contact"
+              className="border-t border-border pt-8"
+            >
+              <h2 id="step-contact" className="flex items-baseline gap-3">
+                <span
+                  aria-hidden
+                  className="font-display text-lg font-medium leading-none text-gold"
+                >
+                  03
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground/90">
+                  Your Details
+                </span>
+              </h2>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <Field label="Full Name" error={errors.name}>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={set("name")}
+                    placeholder="Your name"
+                    autoComplete="name"
+                    className="input-dark"
+                  />
+                </Field>
+
+                <Field label="Phone Number" error={errors.phone}>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={set("phone")}
+                    placeholder="+220 …"
+                    autoComplete="tel"
+                    className="input-dark"
+                  />
+                </Field>
+
+                <Field label="Email Address" error={errors.email} full>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={set("email")}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    className="input-dark"
+                  />
+                </Field>
+
+                <Field label="Additional Request (optional)" error={errors.message} full>
+                  <textarea
+                    value={form.message}
+                    onChange={set("message")}
+                    rows={4}
+                    placeholder="Airport pickup, child seat, chauffeur, delivery location…"
+                    className="input-dark resize-none"
+                  />
+                </Field>
+              </div>
+            </section>
 
             <button type="submit" className="btn-gold mt-8 w-full sm:w-auto">
               <MessageCircle className="size-4" aria-hidden />
               Send Booking Request via WhatsApp
             </button>
 
-            {sentUrl && (
-              <p className="mt-4 border border-gold/40 bg-night px-4 py-3 text-sm text-foreground/85" role="status">
-                WhatsApp should now be open with your booking request.{" "}
-                <a href={sentUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-gold underline underline-offset-4">
-                  Tap here if it didn't open.
-                </a>
-              </p>
+            {confirmation && (
+              <div
+                role="status"
+                className="mt-8 border border-gold/50 bg-night p-6 md:p-7"
+              >
+                <p className="label-caps">Request Prepared</p>
+                <p className="mt-3 font-display text-2xl leading-snug text-foreground md:text-3xl">
+                  Your booking reference is{" "}
+                  <span className="text-gold">{confirmation.reference}</span>
+                </p>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                  Quote it whenever you speak with our team. WhatsApp has opened
+                  with your request attached.
+                </p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                  <a
+                    href={confirmation.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-whatsapp flex-1 justify-center"
+                  >
+                    <MessageCircle className="size-4" aria-hidden />
+                    Re-open WhatsApp Request
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((f) => ({
+                        ...f,
+                        pickupDate: "",
+                        returnDate: "",
+                        pickupLocation: "",
+                        returnLocation: "",
+                        name: "",
+                        phone: "",
+                        email: "",
+                        message: "",
+                      }));
+                      setErrors({});
+                      setConfirmation(null);
+                    }}
+                    className="btn-outline flex-1 justify-center"
+                  >
+                    Make Another Booking
+                  </button>
+                </div>
+                <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+                  This request is not stored on our website — it is delivered
+                  directly to our team on WhatsApp, where availability and final
+                  pricing are confirmed personally.
+                </p>
+              </div>
             )}
 
             <p className="mt-5 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
@@ -291,31 +468,58 @@ function BookPage() {
               <dl className="mt-6 space-y-3 border-t border-border pt-5 text-sm">
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Pickup</dt>
-                  <dd className="font-medium text-foreground">
+                  <dd className="text-right font-medium text-foreground">
                     {form.pickupDate ? fmtDate(form.pickupDate) : "—"}
+                    {form.pickupLocation.trim() && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {form.pickupLocation.trim()}
+                      </span>
+                    )}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Return</dt>
-                  <dd className="font-medium text-foreground">
+                  <dd className="text-right font-medium text-foreground">
                     {form.returnDate ? fmtDate(form.returnDate) : "—"}
+                    {form.returnLocation.trim() && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {form.returnLocation.trim()}
+                      </span>
+                    )}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4 border-t border-border pt-3">
+                  <dt className="text-muted-foreground">Daily rate</dt>
+                  <dd className="font-medium text-foreground">
+                    {vehicle ? money(vehicle.pricePerDay) : "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Rental days</dt>
                   <dd className="font-medium text-foreground">{days > 0 ? days : "—"}</dd>
                 </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Subtotal</dt>
+                  <dd className="font-medium text-foreground">
+                    {vehicle && days > 0
+                      ? money(days * vehicle.pricePerDay)
+                      : "—"}
+                  </dd>
+                </div>
                 <div className="flex justify-between gap-4 border-t border-border pt-3">
                   <dt className="text-muted-foreground">Estimated total</dt>
                   <dd className="text-lg font-bold text-gold">
-                    {vehicle && days > 0 ? `$${days * vehicle.pricePerDay}` : "—"}
+                    {vehicle && days > 0
+                      ? money(days * vehicle.pricePerDay)
+                      : "—"}
                   </dd>
                 </div>
               </dl>
 
               <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
                 Estimate only — the final quote is confirmed on WhatsApp before
-                any commitment.
+                any commitment. Security deposits or optional extras, where
+                applicable, are agreed personally; nothing is charged online.
               </p>
 
               <Link

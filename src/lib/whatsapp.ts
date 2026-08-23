@@ -34,6 +34,9 @@ export interface BookingDetails {
   message?: string | undefined;
   rentalDays?: number | undefined;
   estimatedTotal?: string | undefined;
+  reference?: string | undefined;
+  pickupLocation?: string | undefined;
+  returnLocation?: string | undefined;
 }
 
 export const bookingMessage = (b: BookingDetails) =>
@@ -41,9 +44,12 @@ export const bookingMessage = (b: BookingDetails) =>
     "TOKYO RENTALS & CONCIERGE",
     "NEW RENTAL BOOKING REQUEST",
     "",
+    b.reference ? `Reference: ${b.reference}` : "",
     `Vehicle: ${b.vehicleName}`,
     `Pickup Date: ${b.pickupDate}`,
     `Return Date: ${b.returnDate}`,
+    b.pickupLocation ? `Pickup Location: ${b.pickupLocation}` : "",
+    b.returnLocation ? `Return Location: ${b.returnLocation}` : "",
     b.rentalDays ? `Rental Days: ${b.rentalDays}` : "",
     b.estimatedTotal ? `Estimated Total: ${b.estimatedTotal}` : "",
     `Customer Name: ${b.customerName}`,
