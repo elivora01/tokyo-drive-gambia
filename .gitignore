@@ -32,3 +32,6 @@ dist-ssr
 *.sw?
 
 # Environment / secrets.env.env.*!.env.example
+
+# Scratch / working artifacts
+.tmp/

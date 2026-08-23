@@ -286,7 +286,9 @@
     opacity: 0;
     transform: scale(1.16) translate3d(-2.2%, 0.5%, 0);
   }
-  22% {
+  /* Dark hold shortened (was 22% ≈ 1.0s → now ≈ 0.55s): the artwork becomes
+     apparent earlier while the opening beat still reads as a reveal. */
+  12% {
     opacity: 0;
   }
   58% {
@@ -313,10 +315,10 @@
     opacity: 0;
   }
   18% {
-    opacity: 0.5;
+    opacity: 0.66;
   }
   80% {
-    opacity: 0.3;
+    opacity: 0.4;
   }
   100% {
     transform: translateX(140%) skewX(-18deg);
@@ -330,7 +332,7 @@
     opacity: 0;
   }
   20% {
-    opacity: 0.8;
+    opacity: 0.95;
   }
   100% {
     transform: translateX(240%);
@@ -366,6 +368,20 @@
     hero-arrive 4.6s cubic-bezier(0.22, 1, 0.36, 1) both,
     hero-drift 32s ease-in-out 4.8s infinite alternate;
   will-change: transform, opacity;
+}
+
+/* Desktop (md+): soften the left readability shade so the vehicle artwork
+   stays clearly visible beside the headline. Mobile keeps the original
+   stronger utility gradient for text contrast and cheaper paint. */
+@media (min-width: 48rem) {
+  .hero-shade-left {
+    background: linear-gradient(
+      to right,
+      color-mix(in oklab, var(--night) 76%, transparent),
+      color-mix(in oklab, var(--night) 22%, transparent) 44%,
+      transparent 70%
+    );
+  }
 }
 
 .hero-sweep {

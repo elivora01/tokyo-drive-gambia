@@ -11,9 +11,12 @@
  *   vehicles/ fleet photography
  *   pages/    imagery for About / Services / Contact
  */
-import logoImg from "@/assets/brand/logo.png";
-import heroArtworkImg from "@/assets/brand/hero-artwork.png";
-import heroCleanImg from "@/assets/brand/hero-clean.png";
+// Brand imagery ships as optimized WebP derivatives (encoded from the PNG
+// masters with libwebp). The original .png files remain next to them as
+// untouched backups and are intentionally not imported anywhere.
+import logoImg from "@/assets/brand/logo.webp";
+import heroArtworkImg from "@/assets/brand/hero-artwork.webp";
+import heroCleanImg from "@/assets/brand/hero-clean.webp";
 
 import porscheMacanImg from "@/assets/vehicles/porsche-macan.png";
 import infinitiQx60Img from "@/assets/vehicles/infiniti-qx60.png";

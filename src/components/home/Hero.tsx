@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "@tanstack/react-router";
 import { CalendarCheck, Car, Gem, Headset, MapPin } from "lucide-react";
 import { brandAssets } from "@/data/assets";
 import { siteConfig } from "@/data/site";
+import { useScrollProgress } from "@/hooks/useScrollProgress";
 
 /**
  * Cinematic homepage hero.
@@ -14,16 +15,102 @@ import { siteConfig } from "@/data/site";
  * 1.7–2.1s: Tagline, description, and luxury CTAs fade up
  * ~2.4–3.2s: Automotive gold light sweep & subtle light streaks
  * Ambient: Silky atmospheric particles + subtle desktop pointer parallax (disabled on touch/reduced-motion)
+ *
+ * Desktop scroll (Phase 2): the hero becomes a sticky stage inside a ~260vh
+ * runway. Window scroll drives a `--p` CSS custom property from 0 to 1 via
+ * useScrollProgress — pure CSS-variable writes, so scrolling never re-renders
+ * React, and upward scroll reverses progress automatically. Mobile keeps the
+ * static Phase 1 layout; reduced-motion pins the completed state.
  */
 const PARTICLES = [
-  { left: "12%", top: "30%", size: 3, px: "14px", py: "-30px", pd: "9s", pdel: "0.4s", po: 0.25, mobile: true },
-  { left: "22%", top: "62%", size: 2, px: "-10px", py: "-22px", pd: "11s", pdel: "1.2s", po: 0.3, mobile: true },
-  { left: "38%", top: "22%", size: 2, px: "12px", py: "-18px", pd: "8s", pdel: "2s", po: 0.2, mobile: true },
-  { left: "55%", top: "70%", size: 3, px: "-16px", py: "-26px", pd: "10s", pdel: "0.8s", po: 0.35, mobile: true },
-  { left: "68%", top: "28%", size: 2, px: "10px", py: "-34px", pd: "12s", pdel: "1.6s", po: 0.25, mobile: false },
-  { left: "80%", top: "55%", size: 3, px: "-12px", py: "-20px", pd: "9.5s", pdel: "0.2s", po: 0.3, mobile: false },
-  { left: "90%", top: "38%", size: 2, px: "16px", py: "-28px", pd: "10.5s", pdel: "2.4s", po: 0.2, mobile: false },
-  { left: "47%", top: "48%", size: 2, px: "-8px", py: "-16px", pd: "8.5s", pdel: "1s", po: 0.22, mobile: false },
+  {
+    left: "12%",
+    top: "30%",
+    size: 3,
+    px: "14px",
+    py: "-30px",
+    pd: "9s",
+    pdel: "0.4s",
+    po: 0.25,
+    mobile: true,
+  },
+  {
+    left: "22%",
+    top: "62%",
+    size: 2,
+    px: "-10px",
+    py: "-22px",
+    pd: "11s",
+    pdel: "1.2s",
+    po: 0.3,
+    mobile: true,
+  },
+  {
+    left: "38%",
+    top: "22%",
+    size: 2,
+    px: "12px",
+    py: "-18px",
+    pd: "8s",
+    pdel: "2s",
+    po: 0.2,
+    mobile: true,
+  },
+  {
+    left: "55%",
+    top: "70%",
+    size: 3,
+    px: "-16px",
+    py: "-26px",
+    pd: "10s",
+    pdel: "0.8s",
+    po: 0.35,
+    mobile: true,
+  },
+  {
+    left: "68%",
+    top: "28%",
+    size: 2,
+    px: "10px",
+    py: "-34px",
+    pd: "12s",
+    pdel: "1.6s",
+    po: 0.25,
+    mobile: false,
+  },
+  {
+    left: "80%",
+    top: "55%",
+    size: 3,
+    px: "-12px",
+    py: "-20px",
+    pd: "9.5s",
+    pdel: "0.2s",
+    po: 0.3,
+    mobile: false,
+  },
+  {
+    left: "90%",
+    top: "38%",
+    size: 2,
+    px: "16px",
+    py: "-28px",
+    pd: "10.5s",
+    pdel: "2.4s",
+    po: 0.2,
+    mobile: false,
+  },
+  {
+    left: "47%",
+    top: "48%",
+    size: 2,
+    px: "-8px",
+    py: "-16px",
+    pd: "8.5s",
+    pdel: "1s",
+    po: 0.22,
+    mobile: false,
+  },
 ];
 
 const HIGHLIGHTS = [
@@ -37,6 +124,31 @@ export function Hero() {
   const heroRef = useRef<HTMLElement>(null);
   const artworkRef = useRef<HTMLDivElement>(null);
   const effectsRef = useRef<HTMLDivElement>(null);
+
+  // Desktop scroll runway (~260vh) wrapping this sticky hero stage. Progress
+  // is written straight to the `--p` custom property on the stage element —
+  // no React state, so scrolling never triggers a re-render.
+  const runwayRef = useRef<HTMLDivElement>(null);
+  const stageTargets = useMemo(() => [heroRef], []);
+  const writeStageVars = useCallback(
+    (progress: number): Record<string, string> => ({
+      "--p": progress.toFixed(4),
+    }),
+    [],
+  );
+  // Matches the Tailwind `md:` breakpoint where the runway/sticky CSS applies;
+  // reduced-motion (or mobile) keeps the hero fully static.
+  const scrollEnabled =
+    typeof window !== "undefined" &&
+    window.matchMedia("(min-width: 768px)").matches &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  useScrollProgress({
+    runwayRef,
+    targets: stageTargets,
+    compute: writeStageVars,
+    enabled: scrollEnabled,
+  });
 
   useEffect(() => {
     const mqReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -116,7 +228,7 @@ export function Hero() {
 
       {/* Layer 1: Atmospheric readability gradients */}
       <div
-        className="absolute inset-0 z-10 bg-gradient-to-r from-night/92 via-night/35 to-transparent"
+        className="hero-shade-left absolute inset-0 z-10 bg-gradient-to-r from-night/92 via-night/35 to-transparent"
         aria-hidden
       />
       <div
@@ -164,6 +276,7 @@ export function Hero() {
               top: p.top,
               width: p.size,
               height: p.size,
+              ["--pin" as string]: p.pdel,
               ["--px" as string]: p.px,
               ["--py" as string]: p.py,
               ["--pd" as string]: p.pd,

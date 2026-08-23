@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { brandAssets } from "@/data/assets";
 import { Hero } from "@/components/home/Hero";
 import { FeaturedFleet } from "@/components/sections/FeaturedFleet";
 import { WhyChooseUs } from "@/components/sections/WhyChooseUs";
@@ -24,6 +25,18 @@ export const Route = createFileRoute("/")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+    ],
+    // LCP priority: start downloading the hero artwork in parallel with
+    // CSS/JS instead of after first paint, so the cinematic arrival
+    // timeline and the image load no longer race. Same registry URL the
+    // <img> renders — never a duplicated/hardcoded path.
+    links: [
+      {
+        rel: "preload",
+        href: brandAssets.heroBackground,
+        as: "image",
+        fetchPriority: "high",
+      },
     ],
   }),
   component: HomePage,
