@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, Menu, Phone, X } from "lucide-react";
 import { brandAssets } from "@/data/assets";
@@ -26,26 +26,55 @@ const serviceItems = SERVICES.map((s) => ({
 }));
 
 function Dropdown({
+  menuKey,
   label,
+  openMenu,
+  setOpenMenu,
   children,
 }: {
+  menuKey: string;
   label: string;
+  openMenu: string | null;
+  setOpenMenu: (open: string | null) => void;
   children: React.ReactNode;
 }) {
+  const open = openMenu === menuKey;
   return (
-    <div className="group relative">
+    <div
+      className="relative"
+      data-dropdown-menu={menuKey}
+      onMouseEnter={() => setOpenMenu(menuKey)}
+      onMouseLeave={() => setOpenMenu(null)}
+      onFocusCapture={() => setOpenMenu(menuKey)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpenMenu(null);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setOpenMenu(null);
+      }}
+    >
       <button
         type="button"
         className={cn(NAV_LINK, "flex items-center gap-1 py-2")}
         aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => setOpenMenu(open ? null : menuKey)}
       >
         {label}
         <ChevronDown
-          className="size-3.5 transition-transform duration-300 group-hover:rotate-180"
+          className={cn(
+            "size-3.5 transition-transform duration-300",
+            open && "rotate-180",
+          )}
           aria-hidden
         />
       </button>
-      <div className="invisible absolute left-1/2 top-full -translate-x-1/2 pt-2 opacity-0 transition-all duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+      <div
+        className={cn(
+          "absolute left-1/2 top-full -translate-x-1/2 pt-2 transition-all duration-200",
+          open ? "visible opacity-100" : "invisible opacity-0",
+        )}
+      >
         <div className="w-60 border border-border bg-night py-2 shadow-2xl shadow-black/60">
           {children}
         </div>
@@ -60,6 +89,12 @@ const dropdownLinkCls =
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Which desktop dropdown is currently open. Controlled state replaces the
+  // old CSS-only hover mechanism so item clicks, outside presses, Escape,
+  // hover switching and route changes can all deterministically close it.
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const closeMenus = useCallback(() => setOpenMenu(null), []);
+  const closeMobile = useCallback(() => setMenuOpen(false), []);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const solid = scrolled || pathname !== "/";
 
@@ -70,9 +105,22 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Any route change (incl. browser back/forward) always leaves menus closed.
   useEffect(() => {
     setMenuOpen(false);
+    setOpenMenu(null);
   }, [pathname]);
+
+  // Pressing anywhere outside an open desktop dropdown closes it.
+  useEffect(() => {
+    if (!openMenu) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.target instanceof Element && e.target.closest("[data-dropdown-menu]")) return;
+      setOpenMenu(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [openMenu]);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -106,12 +154,13 @@ export function Header() {
           <Link to="/" className={NAV_LINK} activeProps={{ className: cn(NAV_LINK, "text-gold") }} activeOptions={{ exact: true }}>
             Home
           </Link>
-          <Dropdown label="Fleet">
+          <Dropdown menuKey="fleet" label="Fleet" openMenu={openMenu} setOpenMenu={setOpenMenu}>
             {fleetItems.map((item) => (
               <Link
                 key={item.label}
                 to={item.to}
                 search={item.search}
+                onClick={closeMenus}
                 className={dropdownLinkCls}
                 activeProps={{ className: cn(dropdownLinkCls, "text-gold") }}
                 activeOptions={{ exact: item.label === "All Vehicles", includeSearch: item.label !== "All Vehicles" }}
@@ -120,9 +169,9 @@ export function Header() {
               </Link>
             ))}
           </Dropdown>
-          <Dropdown label="Services">
+          <Dropdown menuKey="services" label="Services" openMenu={openMenu} setOpenMenu={setOpenMenu}>
             {serviceItems.map((item) => (
-              <Link key={item.label} to={item.to} hash={item.hash} className={dropdownLinkCls}>
+              <Link key={item.label} to={item.to} hash={item.hash} onClick={closeMenus} className={dropdownLinkCls}>
                 {item.label}
               </Link>
             ))}
@@ -164,7 +213,7 @@ export function Header() {
       {menuOpen && (
         <div className="fixed inset-0 top-[4.5rem] z-50 overflow-y-auto border-t border-border bg-night lg:hidden">
           <nav aria-label="Mobile" className="mx-auto max-w-7xl px-6 py-8">
-            <MobileLink to="/" label="Home" />
+            <MobileLink to="/" label="Home" onClick={closeMobile} />
             <p className="label-caps mt-8 mb-2">Fleet</p>
             <div className="grid grid-cols-2 gap-x-4">
               {fleetItems.map((item) => (
@@ -172,6 +221,7 @@ export function Header() {
                   key={item.label}
                   to={item.to}
                   search={item.search}
+                  onClick={closeMobile}
                   className="border-b border-border/60 py-3 text-sm text-foreground/80 transition-colors hover:text-gold"
                 >
                   {item.label}
@@ -185,6 +235,7 @@ export function Header() {
                   key={item.label}
                   to={item.to}
                   hash={item.hash}
+                  onClick={closeMobile}
                   className="border-b border-border/60 py-3 text-sm text-foreground/80 transition-colors hover:text-gold"
                 >
                   {item.label}
@@ -192,14 +243,14 @@ export function Header() {
               ))}
             </div>
             <div className="mt-8 grid grid-cols-2 gap-4">
-              <MobileLink to="/about" label="About" />
-              <MobileLink to="/contact" label="Contact" />
+              <MobileLink to="/about" label="About" onClick={closeMobile} />
+              <MobileLink to="/contact" label="Contact" onClick={closeMobile} />
             </div>
             <div className="mt-10 flex flex-col gap-3">
-              <Link to="/book" className="btn-gold w-full">
+              <Link to="/book" onClick={closeMobile} className="btn-gold w-full">
                 Book Now
               </Link>
-              <a href={siteConfig.phoneHref} className="btn-outline w-full">
+              <a href={siteConfig.phoneHref} onClick={closeMobile} className="btn-outline w-full">
                 <Phone className="size-4" aria-hidden />
                 Call {siteConfig.phoneDisplay}
               </a>
@@ -211,10 +262,19 @@ export function Header() {
   );
 }
 
-function MobileLink({ to, label }: { to: string; label: string }) {
+function MobileLink({
+  to,
+  label,
+  onClick,
+}: {
+  to: string;
+  label: string;
+  onClick?: () => void;
+}) {
   return (
     <Link
       to={to}
+      onClick={onClick}
       className="block py-2 font-display text-3xl text-foreground transition-colors hover:text-gold"
     >
       {label}
