@@ -3,8 +3,9 @@ import { useMemo, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { CalendarCheck, MessageCircle, ShieldCheck } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
+import { useCurrency } from "@/components/site/CurrencyProvider";
 import { siteConfig } from "@/data/site";
-import { VEHICLES, formatPrice, getVehicleBySlug } from "@/data/vehicles";
+import { VEHICLES, getVehicleBySlug } from "@/data/vehicles";
 import { bookingUrl } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/book")({
@@ -80,7 +81,7 @@ const fmtDate = (iso: string) =>
     year: "numeric",
   });
 
-/** Thousands-separated USD amount used across the summary and confirmation. */
+/** Canonical USD amount for the WhatsApp handoff (business quoting currency). */
 const money = (n: number) => `$${n.toLocaleString("en-US")}`;
 
 /**
@@ -95,6 +96,7 @@ const makeBookingRef = () =>
 
 function BookPage() {
   const search = Route.useSearch();
+  const { format } = useCurrency();
   const [form, setForm] = useState<BookingForm>({
     vehicleSlug: search.vehicle && getVehicleBySlug(search.vehicle) ? search.vehicle : "",
     pickupDate: "",
@@ -221,7 +223,7 @@ function BookPage() {
                     <option value="">Select a vehicle…</option>
                     {VEHICLES.map((v) => (
                       <option key={v.id} value={v.slug}>
-                        {v.name} — {v.category} · {formatPrice(v)}/day
+                        {v.name} — {v.category} · {format(v.pricePerDay)}/day
                         {v.availability === "unavailable" ? " (currently booked)" : ""}
                       </option>
                     ))}
@@ -447,7 +449,7 @@ function BookPage() {
                       </p>
                     </div>
                     <p className="text-right">
-                      <span className="text-xl font-bold text-gold">{formatPrice(vehicle)}</span>
+                      <span className="text-xl font-bold text-gold">{format(vehicle.pricePerDay)}</span>
                       <span className="block text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
                         per day
                       </span>
@@ -491,7 +493,7 @@ function BookPage() {
                 <div className="flex justify-between gap-4 border-t border-border pt-3">
                   <dt className="text-muted-foreground">Daily rate</dt>
                   <dd className="font-medium text-foreground">
-                    {vehicle ? money(vehicle.pricePerDay) : "—"}
+                    {vehicle ? format(vehicle.pricePerDay) : "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -502,7 +504,7 @@ function BookPage() {
                   <dt className="text-muted-foreground">Subtotal</dt>
                   <dd className="font-medium text-foreground">
                     {vehicle && days > 0
-                      ? money(days * vehicle.pricePerDay)
+                      ? format(days * vehicle.pricePerDay)
                       : "—"}
                   </dd>
                 </div>
@@ -510,7 +512,7 @@ function BookPage() {
                   <dt className="text-muted-foreground">Estimated total</dt>
                   <dd className="text-lg font-bold text-gold">
                     {vehicle && days > 0
-                      ? money(days * vehicle.pricePerDay)
+                      ? format(days * vehicle.pricePerDay)
                       : "—"}
                   </dd>
                 </div>

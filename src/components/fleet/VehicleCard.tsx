@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Cog, Fuel, Snowflake, Users } from "lucide-react";
-import { formatPrice, type Vehicle } from "@/data/vehicles";
+import { type Vehicle } from "@/data/vehicles";
 import { vehicleEnquiryUrl } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/components/site/CurrencyProvider";
 
 export function AvailabilityBadge({
   availability,
@@ -36,6 +37,7 @@ export function AvailabilityBadge({
 
 export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const available = vehicle.availability === "available";
+  const { format } = useCurrency();
 
   return (
     <article className="lux-card card-shine group flex h-full flex-col overflow-hidden transition-all duration-500 hover:border-gold/50 hover:shadow-xl hover:shadow-black/60">
@@ -86,7 +88,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           </div>
           <p className="shrink-0 text-right">
             <span className="text-xl font-bold text-gold">
-              {formatPrice(vehicle)}
+              {format(vehicle.pricePerDay)}
             </span>
             <span className="block text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
               per day

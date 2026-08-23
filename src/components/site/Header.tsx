@@ -6,6 +6,8 @@ import { siteConfig } from "@/data/site";
 import { SERVICES } from "@/data/services";
 import { VEHICLE_CATEGORIES, categorySlug } from "@/data/vehicles";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "./CurrencyProvider";
+import { CURRENCY_OPTIONS } from "@/lib/currency";
 
 const NAV_LINK =
   "text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground/75 transition-colors hover:text-gold";
@@ -95,6 +97,7 @@ export function Header() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const closeMenus = useCallback(() => setOpenMenu(null), []);
   const closeMobile = useCallback(() => setMenuOpen(false), []);
+  const { currency, setCurrency } = useCurrency();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const solid = scrolled || pathname !== "/";
 
@@ -185,6 +188,18 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-5 lg:flex">
+          <select
+            aria-label="Display currency"
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="cursor-pointer appearance-none bg-transparent pr-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/75 transition-colors hover:text-gold focus:outline-none [&>option]:bg-night"
+          >
+            {CURRENCY_OPTIONS.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.code}
+              </option>
+            ))}
+          </select>
           <a
             href={siteConfig.phoneHref}
             className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.14em] text-foreground/75 transition-colors hover:text-gold"
@@ -213,6 +228,23 @@ export function Header() {
       {menuOpen && (
         <div className="fixed inset-0 top-[4.5rem] z-50 overflow-y-auto border-t border-border bg-night lg:hidden">
           <nav aria-label="Mobile" className="mx-auto max-w-7xl px-6 py-8">
+            <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                Currency
+              </span>
+              <select
+                aria-label="Display currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="cursor-pointer border border-border bg-night px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-foreground focus:outline-none [&>option]:bg-night"
+              >
+                {CURRENCY_OPTIONS.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {option.code} — {option.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <MobileLink to="/" label="Home" onClick={closeMobile} />
             <p className="label-caps mt-8 mb-2">Fleet</p>
             <div className="grid grid-cols-2 gap-x-4">

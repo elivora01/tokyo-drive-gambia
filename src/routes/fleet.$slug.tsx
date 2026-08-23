@@ -12,13 +12,13 @@ import {
   Users,
 } from "lucide-react";
 import {
-  formatPrice,
   getRelatedVehicles,
   getVehicleBySlug,
 } from "@/data/vehicles";
 import { siteConfig } from "@/data/site";
 import { vehicleEnquiryUrl } from "@/lib/whatsapp";
 import { AvailabilityBadge, VehicleCard } from "@/components/fleet/VehicleCard";
+import { useCurrency } from "@/components/site/CurrencyProvider";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/fleet/$slug")({
@@ -68,6 +68,7 @@ function VehicleDetailPage() {
   const { slug } = Route.useParams();
   const vehicle = getVehicleBySlug(slug);
   const [imageIndex, setImageIndex] = useState(0);
+  const { format } = useCurrency();
 
   if (!vehicle) throw notFound();
 
@@ -202,7 +203,7 @@ function VehicleDetailPage() {
               </div>
               <p className="mt-5 border-y border-border py-4">
                 <span className="text-3xl font-bold text-gold">
-                  {formatPrice(vehicle)}
+                  {format(vehicle.pricePerDay)}
                 </span>
                 <span className="ml-2 text-xs uppercase tracking-[0.15em] text-muted-foreground">
                   per day

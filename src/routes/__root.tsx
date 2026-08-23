@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { CurrencyProvider } from "../components/site/CurrencyProvider";
 import { Header } from "../components/site/Header";
 import { Footer } from "../components/site/Footer";
 
@@ -126,12 +127,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Header />
-      <main key={pathname} className="page-enter">
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-      </main>
-      <Footer />
+      <CurrencyProvider>
+        <Header />
+        <main key={pathname} className="page-enter">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </main>
+        <Footer />
+      </CurrencyProvider>
     </QueryClientProvider>
   );
 }
