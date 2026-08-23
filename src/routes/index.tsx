@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { brandAssets } from "@/data/assets";
 import { Hero } from "@/components/home/Hero";
+import {
+  BIRTHDAY_SEEN_KEY,
+  BirthdaySurprise,
+} from "@/components/home/BirthdaySurprise";
 import { FeaturedFleet } from "@/components/sections/FeaturedFleet";
 import { WhyChooseUs } from "@/components/sections/WhyChooseUs";
 import { BookingSteps } from "@/components/sections/BookingSteps";
@@ -9,6 +14,24 @@ import { AboutTeaser } from "@/components/sections/AboutTeaser";
 import { CtaSection } from "@/components/sections/CtaSection";
 
 export const Route = createFileRoute("/")({
+  // Birthday surprise entry points: `/?birthday=1` (one-time, production)
+  // and `/?birthday-preview=1` (testing override). Absent → plain homepage.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    birthday?: string | undefined;
+    "birthday-preview"?: string | undefined;
+  } => ({
+    birthday:
+      typeof search["birthday"] === "string" && search["birthday"] === "1"
+        ? "1"
+        : undefined,
+    "birthday-preview":
+      typeof search["birthday-preview"] === "string" &&
+      search["birthday-preview"] === "1"
+        ? "1"
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Luxury Car Rental The Gambia | Tokyo Rentals & Concierge" },
@@ -42,9 +65,44 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+type BirthdayGate = "checking" | "show" | "skip";
+
+/**
+ * Resolve the birthday gate after hydration (isomorphic layout effect →
+ * no first-paint flash on clients, no SSR mismatch). Priority: preview
+ * override → unseen production link → plain homepage.
+ */
+function useBirthdayGate(birthday: string | undefined, preview: string | undefined) {
+  const [gate, setGate] = useState<BirthdayGate>("checking");
+
+  useIsoLayoutEffect(() => {
+    let seen = false;
+    try {
+      seen = window.localStorage.getItem(BIRTHDAY_SEEN_KEY) === "1";
+    } catch {
+      seen = false;
+    }
+    if (preview === "1") setGate("show");
+    else if (birthday === "1" && !seen) setGate("show");
+    else setGate("skip");
+  }, [birthday, preview]);
+
+  const reveal = useCallback(() => setGate("skip"), []);
+  return { gate, reveal };
+}
+
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 function HomePage() {
+  const { birthday, "birthday-preview": birthdayPreview } = Route.useSearch();
+  const { gate, reveal } = useBirthdayGate(birthday, birthdayPreview);
+
   return (
     <>
+      {gate === "show" && (
+        <BirthdaySurprise preview={birthdayPreview === "1"} onReveal={reveal} />
+      )}
       <Hero />
       <FeaturedFleet />
       <WhyChooseUs />

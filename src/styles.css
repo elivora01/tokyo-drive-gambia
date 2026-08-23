@@ -682,3 +682,246 @@ button:hover > .cta-arrow {
     display: none;
   }
 }
+
+/* ================================================================== */
+/* Birthday surprise — fully isolated `.birthday-*` namespace.         */
+/* Rendered only by the homepage gate (/?birthday=1 / -preview).       */
+/* None of these rules affect the cinematic hero or any other screen.  */
+/* ================================================================== */
+
+.birthday-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden auto;
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in oklab, var(--gold) 13%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      90% 70% at 85% 100%,
+      color-mix(in oklab, #b45309 11%, transparent),
+      transparent 60%
+    ),
+    var(--night);
+  animation: bd-fade-in 0.7s ease both;
+  transition:
+    opacity 0.95s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.95s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.birthday-overlay.is-leaving {
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+/* Expanding ambient light during the exit — "the surprise opens up". */
+.birthday-overlay.is-leaving .birthday-glow {
+  animation: none;
+  opacity: 0.8;
+  transform: scale(1.35);
+  transition:
+    transform 1.15s ease-out,
+    opacity 1.15s ease-out;
+}
+
+.birthday-glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.birthday-glow-a {
+  width: min(70vw, 620px);
+  height: min(70vw, 620px);
+  left: -12%;
+  top: -18%;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--gold) 26%, transparent),
+    transparent 65%
+  );
+  opacity: 0.5;
+  animation: bd-drift 16s ease-in-out infinite alternate;
+}
+
+.birthday-glow-b {
+  width: min(60vw, 520px);
+  height: min(60vw, 520px);
+  right: -14%;
+  bottom: -22%;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, #f59e0b 20%, transparent),
+    transparent 62%
+  );
+  opacity: 0.38;
+  animation: bd-drift 21s ease-in-out infinite alternate-reverse;
+}
+
+.birthday-particle {
+  position: absolute;
+  border-radius: 9999px;
+  background: var(--gold);
+  pointer-events: none;
+  opacity: 0;
+  animation: bd-particle var(--pd-dur, 11s) ease-in-out var(--pd-delay, 0s) infinite;
+}
+
+/* Staggered entrance reveals (delay comes from --bd-delay per element). */
+.birthday-reveal {
+  opacity: 0;
+  animation: bd-rise 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--bd-delay, 0s);
+}
+
+/* Heading settles from a wide letterspaced whisper into place. */
+.birthday-heading {
+  animation: bd-heading 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.25s;
+}
+
+.birthday-highlight {
+  background: linear-gradient(
+    100deg,
+    var(--gold) 10%,
+    color-mix(in oklab, var(--gold) 45%, #fff8e1) 50%,
+    var(--gold) 90%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px color-mix(in oklab, var(--gold) 32%, transparent));
+}
+
+.birthday-cta {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--gold) 40%, transparent),
+    0 10px 40px -8px color-mix(in oklab, var(--gold) 55%, transparent);
+  animation: bd-pulse 2.8s ease-in-out 2.4s infinite;
+}
+
+.birthday-cta:hover {
+  transform: translateY(-2px);
+}
+
+.birthday-cta:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+@keyframes bd-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bd-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, 4%, 0) scale(1.08);
+  }
+}
+
+@keyframes bd-particle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  15% {
+    opacity: var(--pd-op, 0.5);
+  }
+  50% {
+    transform: translate3d(var(--pd-x, 12px), var(--pd-y, -30px), 0);
+  }
+  85% {
+    opacity: calc(var(--pd-op, 0.5) * 0.6);
+  }
+}
+
+@keyframes bd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bd-heading {
+  from {
+    opacity: 0;
+    letter-spacing: 0.18em;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: normal;
+    transform: none;
+  }
+}
+
+@keyframes bd-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--gold) 40%, transparent),
+      0 10px 40px -8px color-mix(in oklab, var(--gold) 55%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--gold) 55%, transparent),
+      0 10px 52px -6px color-mix(in oklab, var(--gold) 75%, transparent);
+  }
+}
+
+/* Reduced motion: static composition, instant text, simple quick fade. */
+@media (prefers-reduced-motion: reduce) {
+  .birthday-overlay {
+    animation: none;
+    transition: opacity 0.35s ease;
+  }
+  .birthday-overlay.is-leaving {
+    transform: none;
+  }
+  .birthday-glow,
+  .birthday-particle,
+  .birthday-cta {
+    animation: none !important;
+  }
+  .birthday-particle {
+    opacity: 0.25;
+  }
+  .birthday-glow {
+    opacity: 0.35;
+  }
+  .birthday-reveal,
+  .birthday-heading {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+  .is-leaving .birthday-glow {
+    transform: none;
+    transition: none;
+  }
+  .birthday-cta:hover {
+    transform: none;
+  }
+}
